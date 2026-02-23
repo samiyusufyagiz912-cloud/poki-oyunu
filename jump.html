@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Jump - Rhythm Platform Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        body {
+            background: #0a0a0a;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a0033 100%);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.95);
+            pointer-events: auto;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        h1 {
+            color: #00ffff;
+            font-size: 3.5em;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+            text-align: center;
+            font-weight: 900;
+            letter-spacing: 5px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.05); filter: brightness(1.3); }
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #ff0066, #ff00ff);
+            border: none;
+            padding: 20px 50px;
+            color: white;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 0 30px rgba(255,0,102,0.6), inset 0 0 20px rgba(255,255,255,0.2);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:hover, .btn:active {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 0 40px rgba(255,0,102,0.9), 0 10px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #00ccff, #0066ff);
+            font-size: 1.2em;
+            padding: 15px 35px;
+        }
+        
+        .btn-ad {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            font-size: 1.1em;
+            padding: 18px 40px;
+            animation: glow 2s infinite;
+        }
+        
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #00ffff;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #coins {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #ffd700;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #ffd700;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .shop-item {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #00ffff;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 10px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 160px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .shop-item:hover {
+            background: rgba(0,255,255,0.2);
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,255,255,0.3);
+        }
+        
+        .shop-item.locked {
+            opacity: 0.4;
+            border-color: #666;
+            filter: grayscale(0.8);
+        }
+        
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            max-width: 600px;
+            margin: 20px;
+        }
+        
+        #adBanner {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(90deg, #1a1a2e, #16213e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            font-size: 14px;
+            border-top: 2px solid #333;
+            z-index: 100;
+        }
+        
+        .reward-ad {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            padding: 18px 35px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 15px;
+            animation: glow 2s infinite;
+            border: none;
+            font-size: 1.1em;
+            box-shadow: 0 0 20px rgba(0,255,136,0.5);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px #00ff88, 0 0 20px rgba(0,255,136,0.5); }
+            50% { box-shadow: 0 0 30px #00ff88, 0 0 60px rgba(0,255,136,0.8); }
+        }
+        
+        .level-select {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 25px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .level-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 15px;
+            border: 3px solid #00ffff;
+            background: rgba(0,255,255,0.15);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .level-btn:hover {
+            background: rgba(0,255,255,0.4);
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 0 40px rgba(0,255,255,0.6);
+        }
+        
+        .level-btn.locked {
+            border-color: #555;
+            background: rgba(50,50,50,0.3);
+            color: #666;
+            box-shadow: none;
+        }
+        
+        .star {
+            color: #ffd700;
+            font-size: 12px;
+            margin-top: 3px;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        
+        .tutorial {
+            color: #ddd;
+            text-align: center;
+            max-width: 450px;
+            margin: 25px;
+            line-height: 1.8;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(0,255,255,0.3);
+        }
+        
+        .tutorial p {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .tutorial p:hover {
+            background: rgba(0,255,255,0.1);
+            transform: translateX(10px);
+        }
+        
+        .volume-control {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 30px;
+            border: 2px solid #00ffff;
+        }
+        
+        .volume-btn {
+            background: none;
+            border: none;
+            color: #00ffff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: all 0.3s;
+        }
+        
+        .volume-btn:hover {
+            transform: scale(1.2);
+            text-shadow: 0 0 20px #00ffff;
+        }
+        
+        .beat-indicator {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        .beat-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.1s;
+        }
+        
+        .beat-dot.active {
+            background: #00ffff;
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            transform: scale(1.5);
+        }
+        
+        .lang-switch {
+            position: absolute;
+            top: 20px;
+            right: 150px;
+            z-index: 10;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 30px;
+            border: 2px solid #ff00ff;
+        }
+        
+        .lang-btn {
+            background: none;
+            border: none;
+            color: #ff00ff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: all 0.3s;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .lang-btn:hover {
+            transform: scale(1.2);
+            text-shadow: 0 0 20px #ff00ff;
+        }
+        
+        .lang-btn.active {
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+        }
+        
+        .ad-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .ad-btn {
+            background: linear-gradient(45deg, #ffaa00, #ff6600);
+            padding: 15px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .ad-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255,170,0,0.6);
+        }
+        
+        .difficulty-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #ff0066;
+            color: white;
+        }
+        
+        .difficulty-badge.easy { background: #00ff88; }
+        .difficulty-badge.medium { background: #ffaa00; }
+        .difficulty-badge.hard { background: #ff0066; }
+        .difficulty-badge.extreme { background: #9900ff; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div id="score">Score: 0%</div>
+        <div id="coins">💰 0</div>
+        
+        <div class="volume-control">
+            <button class="volume-btn" onclick="game.toggleMute()" id="muteBtn">🔊</button>
+        </div>
+        
+        <div class="lang-switch">
+            <button class="lang-btn active" onclick="game.setLanguage('tr')" id="btnTr">TR</button>
+            <button class="lang-btn" onclick="game.setLanguage('en')" id="btnEn">EN</button>
+        </div>
+        
+        <div class="beat-indicator" id="beatIndicator" style="display: none;">
+            <div class="beat-dot" id="beat0"></div>
+            <div class="beat-dot" id="beat1"></div>
+            <div class="beat-dot" id="beat2"></div>
+            <div class="beat-dot" id="beat3"></div>
+        </div>
+        
+        <!-- Main Menu -->
+        <div id="mainMenu" class="screen">
+            <h1 data-lang="title">NEON JUMP</h1>
+            <p style="color: #00ffff; margin-bottom: 30px; font-size: 1.3em; text-shadow: 0 0 10px #00ffff;" data-lang="subtitle">🎵 Rhythm Platform Game 🎵</p>
+            <button class="btn" onclick="game.showLevelSelect()" data-lang="play">▶ PLAY</button>
+            <button class="btn btn-secondary" onclick="game.showShop()" data-lang="shop">🛒 SHOP</button>
+            <button class="btn btn-secondary" onclick="game.showTutorial()" data-lang="howToPlay">❓ HOW TO PLAY?</button>
+            <div style="margin-top: 30px; color: #888; font-size: 1em; text-align: center;">
+                <p data-lang="highScore">High Score: <span id="highScore" style="color: #00ffff; font-weight: bold;">0%</span></p>
+                <p style="margin-top: 10px; font-size: 0.9em;" data-lang="soundRec">🔊 Sound recommended</p>
+            </div>
+        </div>
+        
+        <!-- Level Select -->
+        <div id="levelSelect" class="screen hidden">
+            <h2 style="color: #00ffff; margin-bottom: 30px; font-size: 2.5em; text-shadow: 0 0 20px #00ffff;" data-lang="selectLevel">SELECT LEVEL</h2>
+            <div class="level-select" id="levelGrid"></div>
+            <button class="btn btn-secondary" onclick="game.showMainMenu()" data-lang="back">◀ BACK</button>
+        </div>
+        
+        <!-- Shop -->
+        <div id="shop" class="screen hidden">
+            <h2 style="color: #ffd700; margin-bottom: 15px; font-size: 2.5em; text-shadow: 0 0 20px #ffd700;">🛒 <span data-lang="shopTitle">SHOP</span></h2>
+            <p style="color: white; margin-bottom: 25px; font-size: 1.3em;"><span data-lang="yourCoins">Your Coins:</span> <span id="shopCoins" style="color: #ffd700; font-weight: bold;">0</span> 💰</p>
+            <div class="shop-grid" id="shopGrid"></div>
+            
+            <div class="ad-options">
+                <button class="ad-btn" onclick="game.watchAdForCoins('small')">📺 <span data-lang="watchAdSmall">Watch Ad +25 💰</span></button>
+                <button class="reward-ad" onclick="game.watchAdForCoins('medium')">📺 <span data-lang="watchAdMedium">Watch Ad +50 💰</span></button>
+                <button class="ad-btn" onclick="game.watchAdForCoins('large')" style="background: linear-gradient(45deg, #ff00ff, #aa00ff);">📺 <span data-lang="watchAdLarge">Watch Long Ad +100 💰</span></button>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="game.showMainMenu()" data-lang="back">◀ BACK</button>
+        </div>
+        
+        <!-- Tutorial -->
+        <div id="tutorial" class="screen hidden">
+            <h2 style="color: #00ffff; margin-bottom: 25px; font-size: 2.5em; text-shadow: 0 0 20px #00ffff;" data-lang="howToPlayTitle">HOW TO PLAY?</h2>
+            <div class="tutorial">
+                <p>🎮 <strong data-lang="tapJump">Tap screen to jump!</strong></p>
+                <p>🎵 <span data-lang="rhythm">Jump with the music rhythm</span></p>
+                <p>⚡ <span data-lang="holdJump">Hold for higher jump (max 0.5s!)</span></p>
+                <p>💎 <span data-lang="collectCoins">Collect coins to unlock characters</span></p>
+                <p>🏆 <span data-lang="reachEnd">Reach the end without hitting obstacles!</span></p>
+            </div>
+            <button class="btn" onclick="game.showMainMenu()" data-lang="gotIt">GOT IT!</button>
+        </div>
+        
+        <!-- Game Over -->
+        <div id="gameOver" class="screen hidden">
+            <h2 id="gameOverTitle" style="color: #ff0066; margin-bottom: 25px; font-size: 3em; text-shadow: 0 0 30px #ff0066;">💀 <span data-lang="gameOver">GAME OVER!</span></h2>
+            <p style="color: white; font-size: 2em; margin-bottom: 15px; font-weight: bold;"><span data-lang="score">Score:</span> <span id="finalScore" style="color: #00ffff;">0%</span></p>
+            <p style="color: #ffd700; font-size: 1.5em; margin-bottom: 35px; font-weight: bold;">+ <span id="earnedCoins">0</span> 💰</p>
+            
+            <div class="ad-options">
+                <button class="btn" onclick="game.restart()" data-lang="tryAgain">🔄 TRY AGAIN</button>
+                <button class="reward-ad" onclick="game.continueWithAd()" data-lang="continueAd">📺 WATCH AD & CONTINUE</button>
+                <button class="ad-btn" onclick="game.doubleCoinsWithAd()" data-lang="doubleCoins">📺 DOUBLE COINS (AD)</button>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="game.showMainMenu()" data-lang="mainMenu">🏠 MAIN MENU</button>
+        </div>
+        
+        <!-- Level Complete -->
+        <div id="levelComplete" class="screen hidden">
+            <h2 style="color: #00ff88; margin-bottom: 25px; font-size: 3em; text-shadow: 0 0 30px #00ff88;">🎉 <span data-lang="levelComplete">LEVEL COMPLETE!</span></h2>
+            <div style="color: #ffd700; font-size: 4em; margin-bottom: 25px; text-shadow: 0 0 30px #ffd700; animation: pulse 1s infinite;">★★★</div>
+            <p style="color: white; font-size: 2em; margin-bottom: 15px; font-weight: bold;" data-lang="perfect">Perfect!</p>
+            <p style="color: #ffd700; font-size: 1.5em; margin-bottom: 35px; font-weight: bold;">+ <span id="completionCoins">100</span> 💰</p>
+            
+            <div class="ad-options">
+                <button class="btn" onclick="game.nextLevel()" data-lang="nextLevel">➡ NEXT LEVEL</button>
+                <button class="ad-btn" onclick="game.tripleCoinsWithAd()" data-lang="tripleCoins">📺 TRIPLE COINS (AD)</button>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="game.showMainMenu()" data-lang="mainMenu">🏠 MAIN MENU</button>
+        </div>
+        
+        <!-- Daily Rewards -->
+        <div id="dailyRewards" class="screen hidden">
+            <h2 style="color: #ffd700; margin-bottom: 25px; font-size: 2.5em; text-shadow: 0 0 20px #ffd700;">🎁 <span data-lang="dailyRewards">DAILY REWARDS</span></h2>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px;">
+                <div class="shop-item" style="min-width: 100px;">
+                    <div style="font-size: 2em;">📅</div>
+                    <div style="font-weight: bold;">Day 1</div>
+                    <div style="color: #ffd700;">+20 💰</div>
+                </div>
+                <div class="shop-item" style="min-width: 100px;">
+                    <div style="font-size: 2em;">📅</div>
+                    <div style="font-weight: bold;">Day 2</div>
+                    <div style="color: #ffd700;">+30 💰</div>
+                </div>
+                <div class="shop-item" style="min-width: 100px;">
+                    <div style="font-size: 2em;">📅</div>
+                    <div style="font-weight: bold;">Day 3</div>
+                    <div style="color: #ffd700;">+50 💰</div>
+                </div>
+                <div class="shop-item" style="min-width: 100px; border-color: #ff00ff;">
+                    <div style="font-size: 2em;">🎁</div>
+                    <div style="font-weight: bold;">Day 4</div>
+                    <div style="color: #ff00ff;">+100 💰</div>
+                </div>
+            </div>
+            <button class="reward-ad" onclick="game.claimDailyReward()" data-lang="claim">📺 WATCH AD TO CLAIM</button>
+            <button class="btn btn-secondary" onclick="game.showMainMenu()" data-lang="back">◀ BACK</button>
+        </div>
+    </div>
+    
+    <div id="adBanner">Advertisement Space - AdMob/Google Ads</div>
+
+    <script>
+        // Dil çevirileri
+        const translations = {
+            tr: {
+                title: "NEON JUMP",
+                subtitle: "🎵 Ritim Platform Oyunu 🎵",
+                play: "▶ OYNA",
+                shop: "🛒 MAĞAZA",
+                howToPlay: "❓ NASIL OYNANIR?",
+                highScore: "En yüksek skor:",
+                soundRec: "🔊 Sesli oynamanız önerilir",
+                selectLevel: "SEVİYE SEÇ",
+                back: "◀ GERİ",
+                shopTitle: "MAĞAZA",
+                yourCoins: "Paran:",
+                watchAdSmall: "Reklam İzle +25 💰",
+                watchAdMedium: "Reklam İzle +50 💰",
+                watchAdLarge: "Uzun Reklam İzle +100 💰",
+                howToPlayTitle: "NASIL OYNANIR?",
+                tapJump: "Ekrana dokunarak zıpla!",
+                rhythm: "Müzik ritmine göre engelleri aş",
+                holdJump: "Zıplama için basılı tut (max 0.5s!)",
+                collectCoins: "Altınları topla ve karakterleri aç",
+                reachEnd: "Engele çarpmadan sona ulaş!",
+                gotIt: "ANLADIM!",
+                gameOver: "OYUN BİTTİ!",
+                score: "Skor:",
+                tryAgain: "🔄 TEKRAR DENE",
+                continueAd: "📺 REKLAM İZLE & DEVAM ET",
+                doubleCoins: "📺 PARAYI İKİLE (REKLAM)",
+                mainMenu: "🏠 ANA MENÜ",
+                levelComplete: "SEVİYE TAMAMLANDI!",
+                perfect: "Mükemmel!",
+                nextLevel: "➡ SONRAKİ SEVİYE",
+                tripleCoins: "📺 PARAYI ÜÇLE (REKLAM)",
+                dailyRewards: "GÜNLÜK ÖDÜLLER",
+                claim: "📺 REKLAM İZLE & AL",
+                easy: "KOLAY",
+                medium: "ORTA",
+                hard: "ZOR",
+                extreme: "EXTREM"
+            },
+            en: {
+                title: "NEON JUMP",
+                subtitle: "🎵 Rhythm Platform Game 🎵",
+                play: "▶ PLAY",
+                shop: "🛒 SHOP",
+                howToPlay: "❓ HOW TO PLAY?",
+                highScore: "High Score:",
+                soundRec: "🔊 Sound recommended",
+                selectLevel: "SELECT LEVEL",
+                back: "◀ BACK",
+                shopTitle: "SHOP",
+                yourCoins: "Your Coins:",
+                watchAdSmall: "Watch Ad +25 💰",
+                watchAdMedium: "Watch Ad +50 💰",
+                watchAdLarge: "Watch Long Ad +100 💰",
+                howToPlayTitle: "HOW TO PLAY?",
+                tapJump: "Tap screen to jump!",
+                rhythm: "Jump with the music rhythm",
+                holdJump: "Hold for higher jump (max 0.5s!)",
+                collectCoins: "Collect coins to unlock characters",
+                reachEnd: "Reach the end without hitting obstacles!",
+                gotIt: "GOT IT!",
+                gameOver: "GAME OVER!",
+                score: "Score:",
+                tryAgain: "🔄 TRY AGAIN",
+                continueAd: "📺 WATCH AD & CONTINUE",
+                doubleCoins: "📺 DOUBLE COINS (AD)",
+                mainMenu: "🏠 MAIN MENU",
+                levelComplete: "LEVEL COMPLETE!",
+                perfect: "Perfect!",
+                nextLevel: "➡ NEXT LEVEL",
+                tripleCoins: "📺 TRIPLE COINS (AD)",
+                dailyRewards: "DAILY REWARDS",
+                claim: "📺 WATCH AD TO CLAIM",
+                easy: "EASY",
+                medium: "MEDIUM",
+                hard: "HARD",
+                extreme: "EXTREME"
+            }
+        };
+
+        // Ses Yöneticisi Sınıfı
+        class AudioManager {
+            constructor() {
+                this.audioContext = null;
+                this.masterGain = null;
+                this.isMuted = false;
+                this.bpm = 128;
+                this.nextNoteTime = 0;
+                this.beatCount = 0;
+                this.isPlaying = false;
+                this.schedulerTimer = null;
+                this.tempo = 128;
+                this.lookahead = 25.0;
+                this.scheduleAheadTime = 0.1;
+            }
+            
+            init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.value = 0.3;
+                    this.masterGain.connect(this.audioContext.destination);
+                }
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+            }
+            
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                if (this.masterGain) {
+                    this.masterGain.gain.setTargetAtTime(this.isMuted ? 0 : 0.3, this.audioContext.currentTime, 0.1);
+                }
+                return this.isMuted;
+            }
+            
+            startMusic() {
+                this.init();
+                this.isPlaying = true;
+                this.nextNoteTime = this.audioContext.currentTime;
+                this.beatCount = 0;
+                this.scheduler();
+            }
+            
+            stopMusic() {
+                this.isPlaying = false;
+                if (this.schedulerTimer) {
+                    clearTimeout(this.schedulerTimer);
+                    this.schedulerTimer = null;
+                }
+            }
+            
+            scheduler() {
+                while (this.nextNoteTime < this.audioContext.currentTime + this.scheduleAheadTime) {
+                    this.scheduleNote(this.beatCount, this.nextNoteTime);
+                    this.nextNoteTime += 60.0 / this.bpm;
+                    this.beatCount = (this.beatCount + 1) % 4;
+                }
+                if (this.isPlaying) {
+                    this.schedulerTimer = setTimeout(() => this.scheduler(), this.lookahead);
+                }
+            }
+            
+            scheduleNote(beatNumber, time) {
+                if (beatNumber === 0) this.playKick(time);
+                this.playHiHat(time);
+                if (beatNumber === 2) this.playSnare(time);
+                const bassNotes = [55, 55, 65, 55];
+                this.playBass(time, bassNotes[beatNumber]);
+                if (beatNumber === 0 || beatNumber === 2) {
+                    this.playSynth(time, 440 + (Math.random() * 200), 0.1);
+                }
+            }
+            
+            playKick(time) {
+                if (this.isMuted) return;
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.frequency.setValueAtTime(150, time);
+                osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+                gain.gain.setValueAtTime(1, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + 0.5);
+            }
+            
+            playSnare(time) {
+                if (this.isMuted) return;
+                const bufferSize = this.audioContext.sampleRate * 0.2;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                
+                const noise = this.audioContext.createBufferSource();
+                noise.buffer = buffer;
+                const noiseFilter = this.audioContext.createBiquadFilter();
+                noiseFilter.type = 'highpass';
+                noiseFilter.frequency.value = 1000;
+                const noiseGain = this.audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.7, time);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(this.masterGain);
+                noise.start(time);
+                
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(180, time);
+                const oscGain = this.audioContext.createGain();
+                oscGain.gain.setValueAtTime(0.5, time);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+                osc.connect(oscGain);
+                oscGain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + 0.2);
+            }
+            
+            playHiHat(time) {
+                if (this.isMuted) return;
+                const bufferSize = this.audioContext.sampleRate * 0.05;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                
+                const noise = this.audioContext.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 8000;
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.3, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start(time);
+            }
+            
+            playBass(time, frequency) {
+                if (this.isMuted) return;
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(frequency, time);
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, time);
+                filter.frequency.exponentialRampToValueAtTime(200, time + 0.3);
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.4, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + 0.3);
+            }
+            
+            playSynth(time, frequency, duration) {
+                if (this.isMuted) return;
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(frequency, time);
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.Q.value = 5;
+                filter.frequency.setValueAtTime(2000, time);
+                filter.frequency.exponentialRampToValueAtTime(500, time + duration);
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.2, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(time);
+                osc.stop(time + duration);
+            }
+            
+            playJump() {
+                if (this.isMuted || !this.audioContext) return;
+                const now = this.audioContext.currentTime;
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+            
+            playCoin() {
+                if (this.isMuted || !this.audioContext) return;
+                const now = this.audioContext.currentTime;
+                const osc1 = this.audioContext.createOscillator();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(1200, now);
+                osc1.frequency.exponentialRampToValueAtTime(1800, now + 0.1);
+                const gain1 = this.audioContext.createGain();
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc1.connect(gain1);
+                gain1.connect(this.masterGain);
+                osc1.start(now);
+                osc1.stop(now + 0.1);
+                
+                const osc2 = this.audioContext.createOscillator();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1800, now + 0.05);
+                osc2.frequency.exponentialRampToValueAtTime(2400, now + 0.15);
+                const gain2 = this.audioContext.createGain();
+                gain2.gain.setValueAtTime(0.2, now + 0.05);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc2.connect(gain2);
+                gain2.connect(this.masterGain);
+                osc2.start(now + 0.05);
+                osc2.stop(now + 0.15);
+            }
+            
+            playCrash() {
+                if (this.isMuted || !this.audioContext) return;
+                const now = this.audioContext.currentTime;
+                const bufferSize = this.audioContext.sampleRate * 0.5;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                
+                const noise = this.audioContext.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, now);
+                filter.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+                noise.start(now);
+                
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(20, now + 0.3);
+                const oscGain = this.audioContext.createGain();
+                oscGain.gain.setValueAtTime(0.5, now);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(oscGain);
+                oscGain.connect(this.masterGain);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            
+            playWin() {
+                if (this.isMuted || !this.audioContext) return;
+                const now = this.audioContext.currentTime;
+                const melody = [523.25, 659.25, 783.99, 1046.50];
+                melody.forEach((freq, i) => {
+                    const osc = this.audioContext.createOscillator();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.15);
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 2000;
+                    const gain = this.audioContext.createGain();
+                    gain.gain.setValueAtTime(0.3, now + i * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.3);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start(now + i * 0.15);
+                    osc.stop(now + i * 0.15 + 0.3);
+                });
+            }
+            
+            playHover() {
+                if (this.isMuted || !this.audioContext) return;
+                const now = this.audioContext.currentTime;
+                const osc = this.audioContext.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                const gain = this.audioContext.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        // Oyun Sınıfı
+        class NeonJump {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.audio = new AudioManager();
+                this.resize();
+                
+                this.state = 'menu';
+                this.level = 1;
+                this.score = 0;
+                this.coins = parseInt(localStorage.getItem('neonCoins')) || 0;
+                this.highScore = parseInt(localStorage.getItem('neonHighScore')) || 0;
+                this.unlockedLevels = parseInt(localStorage.getItem('neonUnlocked')) || 1;
+                this.currentSkin = localStorage.getItem('neonSkin') || 'default';
+                this.language = localStorage.getItem('neonLang') || 'tr';
+                
+                // Zorlaştırılmış fizik
+                this.player = {
+                    x: 100,
+                    y: 0,
+                    width: 35,
+                    height: 35,
+                    velocityY: 0,
+                    velocityX: 0,
+                    jumping: false,
+                    grounded: false,
+                    rotation: 0,
+                    color: '#00ffff',
+                    maxHoldTime: 500, // Max 0.5s basılı tutma
+                    holdStartTime: 0
+                };
+                
+                this.camera = { x: 0, y: 0 };
+                this.obstacles = [];
+                this.particles = [];
+                this.collectibles = [];
+                this.levelLength = 2000;
+                this.progress = 0;
+                
+                this.beat = 0;
+                this.bpm = 128;
+                this.lastBeatTime = 0;
+                
+                this.touchStartY = 0;
+                this.touchStartTime = 0;
+                this.isHolding = false;
+                
+                this.attempts = 0;
+                this.coinsCollected = 0;
+                this.tempCoins = 0; // Reklam için geçici para
+                
+                this.setupEventListeners();
+                this.setLanguage(this.language);
+                this.updateUI();
+                this.generateLevel();
+                this.loop();
+            }
+            
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight - 60;
+                this.groundY = this.canvas.height - 100;
+            }
+            
+            setupEventListeners() {
+                window.addEventListener('resize', () => this.resize());
+                
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.handleInputStart(e.touches[0]);
+                }, {passive: false});
+                
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.handleInputEnd();
+                }, {passive: false});
+                
+                this.canvas.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
+                
+                this.canvas.addEventListener('mousedown', (e) => this.handleInputStart(e));
+                this.canvas.addEventListener('mouseup', () => this.handleInputEnd());
+                
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' || e.code === 'ArrowUp') {
+                        if (this.state === 'playing') this.jump();
+                    }
+                });
+                
+                document.querySelectorAll('.btn, .shop-item, .level-btn').forEach(btn => {
+                    btn.addEventListener('mouseenter', () => this.audio.playHover());
+                });
+            }
+            
+            handleInputStart(e) {
+                if (this.state !== 'playing') return;
+                this.touchStartTime = Date.now();
+                this.isHolding = true;
+                this.player.holdStartTime = Date.now();
+                this.jump();
+            }
+            
+            handleInputEnd() {
+                this.isHolding = false;
+            }
+            
+            jump() {
+                if (this.player.grounded) {
+                    // Temel zıplama gücü
+                    this.player.velocityY = -12;
+                    this.player.jumping = true;
+                    this.player.grounded = false;
+                    this.createParticles(this.player.x, this.player.y + this.player.height, 10, '#00ffff');
+                    this.audio.playJump();
+                }
+            }
+            
+            // Zorlaştırılmış seviye oluşturma
+            generateLevel() {
+                this.obstacles = [];
+                this.collectibles = [];
+                
+                // Daha fazla bölüm ve zorluk
+                const baseSegments = 15;
+                const segments = baseSegments + (this.level * 8);
+                this.levelLength = segments * 120;
+                
+                // Zorluk faktörü
+                const difficulty = Math.min(1, (this.level - 1) / 20);
+                
+                for (let i = 3; i < segments; i++) {
+                    const x = i * 120 + 200;
+                    const rand = Math.random();
+                    
+                    // Artan zorlukla daha karmaşık desenler
+                    if (rand < 0.25 + (difficulty * 0.1)) {
+                        // Dikenler
+                        this.obstacles.push({
+                            x: x,
+                            y: this.groundY - 35,
+                            width: 35,
+                            height: 35,
+                            type: 'spike',
+                            color: '#ff0066'
+                        });
+                    } else if (rand < 0.45) {
+                        // Hareketli platformlar (yeni)
+                        this.obstacles.push({
+                            x: x,
+                            y: this.groundY - 100 - (Math.random() * 80),
+                            width: 80,
+                            height: 15,
+                            type: 'platform',
+                            color: '#ff00ff',
+                            moving: true,
+                            moveSpeed: 2 + Math.random() * 2,
+                            moveRange: 50,
+                            initialY: this.groundY - 100 - (Math.random() * 80)
+                        });
+                    } else if (rand < 0.6) {
+                        // Bloklar
+                        this.obstacles.push({
+                            x: x,
+                            y: this.groundY - 140 - (Math.random() * 60),
+                            width: 35,
+                            height: 35,
+                            type: 'block',
+                            color: '#ff6600'
+                        });
+                    } else if (rand < 0.7 && this.level > 3) {
+                        // Düşen engeller (seviye 3+)
+                        this.obstacles.push({
+                            x: x,
+                            y: 50,
+                            width: 30,
+                            height: 30,
+                            type: 'falling',
+                            color: '#ff0000',
+                            falling: false,
+                            triggerX: x - 200
+                        });
+                    } else if (rand < 0.8 && this.level > 5) {
+                        // Lazerler (seviye 5+)
+                        this.obstacles.push({
+                            x: x,
+                            y: this.groundY - 200,
+                            width: 5,
+                            height: 200,
+                            type: 'laser',
+                            color: '#ff0000',
+                            active: true,
+                            timer: 0
+                        });
+                    }
+                    
+                    // Para dağılımı - daha nadir
+                    if (Math.random() < 0.2) {
+                        this.collectibles.push({
+                            x: x + 40,
+                            y: this.groundY - 100 - (Math.random() * 100),
+                            width: 20,
+                            height: 20,
+                            type: 'coin',
+                            collected: false,
+                            rotation: 0
+                        });
+                    }
+                }
+                
+                // Bitiş çizgisi
+                this.obstacles.push({
+                    x: this.levelLength,
+                    y: this.groundY - 100,
+                    width: 50,
+                    height: 100,
+                    type: 'finish',
+                    color: '#00ff88'
+                });
+            }
+            
+            update() {
+                if (this.state !== 'playing') return;
+                
+                // Ritim
+                const now = Date.now();
+                const beatInterval = 60000 / this.bpm;
+                if (now - this.lastBeatTime > beatInterval) {
+                    this.beat = (this.beat + 1) % 4;
+                    this.lastBeatTime = now;
+                    this.pulseEffect = 1.2;
+                    this.updateBeatIndicator();
+                }
+                
+                // Fizik - daha ağır yerçekimi
+                this.player.velocityY += 0.9;
+                
+                // Basılı tutma kontrolü - max 0.5s
+                if (this.isHolding && !this.player.grounded) {
+                    const holdTime = Date.now() - this.player.holdStartTime;
+                    if (holdTime < this.player.maxHoldTime && this.player.velocityY < 0) {
+                        // Ekstra yukarı kuvvet ama sınırlı
+                        this.player.velocityY -= 0.3;
+                    }
+                }
+                
+                this.player.y += this.player.velocityY;
+                this.player.x += 5 + (this.level * 0.3); // Seviye arttıkça hız artar
+                
+                // Zemin kontrolü
+                if (this.player.y + this.player.height > this.groundY) {
+                    this.player.y = this.groundY - this.player.height;
+                    this.player.velocityY = 0;
+                    this.player.grounded = true;
+                    this.player.rotation = 0;
+                } else {
+                    this.player.grounded = false;
+                    this.player.rotation += 0.1;
+                }
+                
+                this.camera.x = this.player.x - this.canvas.width * 0.3;
+                
+                // Hareketli engelleri güncelle
+                for (let obs of this.obstacles) {
+                    if (obs.type === 'platform' && obs.moving) {
+                        obs.y = obs.initialY + Math.sin(now / 1000 * obs.moveSpeed) * obs.moveRange;
+                    }
+                    
+                    if (obs.type === 'falling' && !obs.falling && this.player.x > obs.triggerX) {
+                        obs.falling = true;
+                    }
+                    
+                    if (obs.type === 'falling' && obs.falling) {
+                        obs.y += 8;
+                    }
+                    
+                    if (obs.type === 'laser') {
+                        obs.timer += 0.05;
+                        obs.active = Math.sin(obs.timer) > 0;
+                    }
+                    
+                    // Çarpışma kontrolü - daha hassas
+                    if (this.checkCollision(this.player, obs)) {
+                        if (obs.type === 'finish') {
+                            this.levelComplete();
+                            return;
+                        } else if (obs.type === 'platform' && this.player.velocityY > 0) {
+                            if (this.player.y + this.player.height - this.player.velocityY <= obs.y) {
+                                this.player.y = obs.y - this.player.height;
+                                this.player.velocityY = 0;
+                                this.player.grounded = true;
+                                this.audio.playJump();
+                            }
+                        } else if (obs.type === 'laser' && !obs.active) {
+                            // Lazer kapalıysa çarpmaz
+                            continue;
+                        } else {
+                            this.gameOver();
+                            return;
+                        }
+                    }
+                }
+                
+                // Para toplama
+                for (let coin of this.collectibles) {
+                    if (!coin.collected && this.checkCollision(this.player, coin)) {
+                        coin.collected = true;
+                        this.coinsCollected++;
+                        this.createParticles(coin.x + 10, coin.y + 10, 8, '#ffd700');
+                        this.audio.playCoin();
+                    }
+                }
+                
+                this.progress = Math.min(100, (this.player.x / this.levelLength) * 100);
+                document.getElementById('score').textContent = 
+                    (this.language === 'tr' ? 'Skor: ' : 'Score: ') + Math.floor(this.progress) + '%';
+                
+                this.updateParticles();
+                
+                if (this.player.y > this.canvas.height) {
+                    this.gameOver();
+                }
+            }
+            
+            updateBeatIndicator() {
+                document.querySelectorAll('.beat-dot').forEach((dot, i) => {
+                    dot.classList.toggle('active', i === this.beat);
+                });
+            }
+            
+            // Daha hassas çarpışma kutusu
+            checkCollision(rect1, rect2) {
+                const padding = 5; // Daraltılmış çarpışma alanı
+                return rect1.x + padding < rect2.x + rect2.width - padding &&
+                       rect1.x + rect1.width - padding > rect2.x + padding &&
+                       rect1.y + padding < rect2.y + rect2.height - padding &&
+                       rect1.y + rect1.height - padding > rect2.y + padding;
+            }
+            
+            createParticles(x, y, count, color) {
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 1,
+                        color: color,
+                        size: Math.random() * 3 + 1
+                    });
+                }
+            }
+            
+            updateParticles() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    p.vy += 0.2;
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+            }
+            
+            draw() {
+                this.ctx.fillStyle = 'rgba(10, 10, 26, 0.3)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.drawGrid();
+                this.ctx.save();
+                this.ctx.translate(-this.camera.x, -this.camera.y);
+                
+                this.drawGround();
+                
+                for (let obs of this.obstacles) this.drawObstacle(obs);
+                for (let coin of this.collectibles) if (!coin.collected) this.drawCoin(coin);
+                
+                this.drawPlayer();
+                
+                for (let p of this.particles) {
+                    this.ctx.globalAlpha = p.life;
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.fillRect(p.x, p.y, p.size, p.size);
+                }
+                this.ctx.globalAlpha = 1;
+                this.ctx.restore();
+                
+                this.drawProgressBar();
+            }
+            
+            drawGrid() {
+                this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+                this.ctx.lineWidth = 1;
+                const offset = (this.camera.x * 0.5) % 50;
+                for (let x = -offset; x < this.canvas.width; x += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+                for (let y = 0; y < this.canvas.height; y += 50) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+            }
+            
+            drawGround() {
+                const gradient = this.ctx.createLinearGradient(0, this.groundY, 0, this.canvas.height);
+                gradient.addColorStop(0, '#ff00ff');
+                gradient.addColorStop(1, '#00ffff');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(this.camera.x, this.groundY, this.canvas.width, this.canvas.height - this.groundY);
+                this.ctx.shadowBlur = 20;
+                this.ctx.shadowColor = '#ff00ff';
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(this.camera.x, this.groundY, this.canvas.width, 4);
+                this.ctx.shadowBlur = 0;
+            }
+            
+            drawPlayer() {
+                this.ctx.save();
+                this.ctx.translate(this.player.x + this.player.width/2, this.player.y + this.player.height/2);
+                this.ctx.rotate(this.player.rotation);
+                this.ctx.shadowBlur = 30;
+                this.ctx.shadowColor = this.getSkinColor();
+                this.ctx.fillStyle = this.getSkinColor();
+                this.ctx.fillRect(-this.player.width/2, -this.player.height/2, this.player.width, this.player.height);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(-8, -8, 16, 16);
+                this.ctx.restore();
+                this.ctx.shadowBlur = 0;
+            }
+            
+            getSkinColor() {
+                const skins = {
+                    'default': '#00ffff',
+                    'red': '#ff0066',
+                    'gold': '#ffd700',
+                    'green': '#00ff88',
+                    'purple': '#9900ff'
+                };
+                return skins[this.currentSkin] || skins['default'];
+            }
+            
+            drawObstacle(obs) {
+                this.ctx.shadowBlur = 20;
+                this.ctx.shadowColor = obs.color;
+                
+                if (obs.type === 'spike') {
+                    this.ctx.fillStyle = obs.color;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(obs.x, obs.y + obs.height);
+                    this.ctx.lineTo(obs.x + obs.width/2, obs.y);
+                    this.ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                } else if (obs.type === 'falling') {
+                    this.ctx.fillStyle = obs.falling ? '#ff0000' : '#ff6666';
+                    this.ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    // Uyarı işareti
+                    if (!obs.falling) {
+                        this.ctx.fillStyle = '#ffff00';
+                        this.ctx.font = '20px Arial';
+                        this.ctx.fillText('!', obs.x + 10, obs.y + 25);
+                    }
+                } else if (obs.type === 'laser') {
+                    if (obs.active) {
+                        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                        this.ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                        this.ctx.shadowColor = '#ff0000';
+                        this.ctx.shadowBlur = 30;
+                    } else {
+                        this.ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                        this.ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    }
+                } else if (obs.type === 'finish') {
+                    this.ctx.fillStyle = '#00ff88';
+                    this.ctx.fillRect(obs.x, obs.y, 10, obs.height);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(obs.x + 10, obs.y);
+                    this.ctx.lineTo(obs.x + 50, obs.y + 25);
+                    this.ctx.lineTo(obs.x + 10, obs.y + 50);
+                    this.ctx.fill();
+                } else {
+                    this.ctx.fillStyle = obs.color;
+                    this.ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                }
+                this.ctx.shadowBlur = 0;
+            }
+            
+            drawCoin(coin) {
+                coin.rotation += 0.05;
+                const scale = Math.abs(Math.cos(coin.rotation));
+                this.ctx.save();
+                this.ctx.translate(coin.x + coin.width/2, coin.y + coin.height/2);
+                this.ctx.scale(scale, 1);
+                this.ctx.shadowBlur = 20;
+                this.ctx.shadowColor = '#ffd700';
+                this.ctx.fillStyle = '#ffd700';
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.fillStyle = '#ffed4e';
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 6, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.restore();
+                this.ctx.shadowBlur = 0;
+            }
+            
+            drawProgressBar() {
+                const width = this.canvas.width - 40;
+                const height = 8;
+                const x = 20;
+                const y = 60;
+                this.ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                this.ctx.fillRect(x, y, width, height);
+                const gradient = this.ctx.createLinearGradient(0, 0, width, 0);
+                gradient.addColorStop(0, '#00ffff');
+                gradient.addColorStop(1, '#ff00ff');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(x, y, (this.progress / 100) * width, height);
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = '#00ffff';
+                this.ctx.fillRect(x + (this.progress / 100) * width - 2, y - 2, 4, height + 4);
+                this.ctx.shadowBlur = 0;
+            }
+            
+            loop() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.loop());
+            }
+            
+            startGame(level = 1) {
+                this.level = level;
+                this.state = 'playing';
+                this.player.x = 100;
+                this.player.y = this.groundY - 100;
+                this.player.velocityY = 0;
+                this.camera.x = 0;
+                this.progress = 0;
+                this.coinsCollected = 0;
+                this.tempCoins = 0;
+                this.generateLevel();
+                
+                this.audio.init();
+                this.audio.startMusic();
+                
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('ui').style.pointerEvents = 'none';
+                document.getElementById('beatIndicator').style.display = 'flex';
+                this.updateBeatIndicator();
+            }
+            
+            gameOver() {
+                this.state = 'gameover';
+                this.attempts++;
+                this.audio.stopMusic();
+                this.audio.playCrash();
+                
+                // Zorlaştırılmış para kazanımı
+                const earned = Math.floor(this.coinsCollected * 5 + (this.progress / 20));
+                this.tempCoins = earned;
+                
+                document.getElementById('finalScore').textContent = Math.floor(this.progress) + '%';
+                document.getElementById('earnedCoins').textContent = earned;
+                document.getElementById('gameOver').classList.remove('hidden');
+                document.getElementById('ui').style.pointerEvents = 'auto';
+                document.getElementById('beatIndicator').style.display = 'none';
+            }
+            
+            levelComplete() {
+                this.state = 'complete';
+                this.audio.stopMusic();
+                this.audio.playWin();
+                
+                // Zorlaştırılmış ödül
+                const earned = 50 + Math.floor(this.coinsCollected * 5);
+                this.tempCoins = earned;
+                
+                if (this.level >= this.unlockedLevels && this.level < 50) {
+                    this.unlockedLevels++;
+                    localStorage.setItem('neonUnlocked', this.unlockedLevels);
+                }
+                
+                document.getElementById('completionCoins').textContent = earned;
+                document.getElementById('levelComplete').classList.remove('hidden');
+                document.getElementById('ui').style.pointerEvents = 'auto';
+                document.getElementById('beatIndicator').style.display = 'none';
+            }
+            
+            restart() {
+                this.coins += this.tempCoins;
+                localStorage.setItem('neonCoins', this.coins);
+                if (this.progress > this.highScore) {
+                    this.highScore = Math.floor(this.progress);
+                    localStorage.setItem('neonHighScore', this.highScore);
+                }
+                document.getElementById('gameOver').classList.add('hidden');
+                this.startGame(this.level);
+            }
+            
+            nextLevel() {
+                this.coins += this.tempCoins;
+                localStorage.setItem('neonCoins', this.coins);
+                document.getElementById('levelComplete').classList.add('hidden');
+                if (this.level < 50) {
+                    this.startGame(this.level + 1);
+                } else {
+                    this.showMainMenu();
+                }
+            }
+            
+            // Reklam fonksiyonları
+            continueWithAd() {
+                this.showAd('📺 Reklam izleniyor...', () => {
+                    document.getElementById('gameOver').classList.add('hidden');
+                    this.state = 'playing';
+                    this.audio.startMusic();
+                    this.player.y = this.groundY - 100;
+                    this.player.velocityY = -10;
+                    document.getElementById('ui').style.pointerEvents = 'none';
+                    document.getElementById('beatIndicator').style.display = 'flex';
+                });
+            }
+            
+            doubleCoinsWithAd() {
+                this.showAd('📺 Reklam izleniyor...', () => {
+                    this.tempCoins *= 2;
+                    document.getElementById('earnedCoins').textContent = this.tempCoins;
+                    this.audio.playCoin();
+                });
+            }
+            
+            tripleCoinsWithAd() {
+                this.showAd('📺 Reklam izleniyor...', () => {
+                    this.tempCoins *= 3;
+                    document.getElementById('completionCoins').textContent = this.tempCoins;
+                    this.audio.playCoin();
+                });
+            }
+            
+            watchAdForCoins(type) {
+                const rewards = { small: 25, medium: 50, large: 100 };
+                this.showAd('📺 Reklam izleniyor...', () => {
+                    this.coins += rewards[type];
+                    localStorage.setItem('neonCoins', this.coins);
+                    this.updateUI();
+                    this.renderShop();
+                    this.audio.playCoin();
+                });
+            }
+            
+            claimDailyReward() {
+                this.showAd('📺 Reklam izleniyor...', () => {
+                    this.coins += 50;
+                    localStorage.setItem('neonCoins', this.coins);
+                    this.updateUI();
+                    this.showMainMenu();
+                    this.audio.playWin();
+                });
+            }
+            
+            showAd(message, callback) {
+                // Gerçek uygulamada burada AdMob/Unity Ads çağrılacak
+                const adOverlay = document.createElement('div');
+                adOverlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.9); z-index: 10000; display: flex;
+                    flex-direction: column; justify-content: center; align-items: center;
+                    color: white; font-family: Orbitron, sans-serif;
+                `;
+                adOverlay.innerHTML = `
+                    <div style="font-size: 3em; margin-bottom: 20px;">📺</div>
+                    <div style="font-size: 1.5em;">${message}</div>
+                    <div style="margin-top: 30px; color: #888;">AdMob / Unity Ads</div>
+                    <div style="margin-top: 20px; font-size: 0.9em; color: #666;">(Simülasyon modu)</div>
+                `;
+                document.body.appendChild(adOverlay);
+                
+                setTimeout(() => {
+                    adOverlay.remove();
+                    if (callback) callback();
+                }, 2000);
+            }
+            
+            showMainMenu() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('mainMenu').classList.remove('hidden');
+                document.getElementById('ui').style.pointerEvents = 'auto';
+                document.getElementById('beatIndicator').style.display = 'none';
+                this.state = 'menu';
+                this.audio.stopMusic();
+                this.updateUI();
+            }
+            
+            showLevelSelect() {
+                this.audio.init();
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('levelSelect').classList.remove('hidden');
+                this.renderLevels();
+            }
+            
+            showShop() {
+                this.audio.init();
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('shop').classList.remove('hidden');
+                this.renderShop();
+            }
+            
+            showTutorial() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('tutorial').classList.remove('hidden');
+            }
+            
+            showDailyRewards() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+                document.getElementById('dailyRewards').classList.remove('hidden');
+            }
+            
+            renderLevels() {
+                const grid = document.getElementById('levelGrid');
+                grid.innerHTML = '';
+                
+                for (let i = 1; i <= 50; i++) {
+                    const btn = document.createElement('div');
+                    btn.className = 'level-btn';
+                    if (i > this.unlockedLevels) btn.classList.add('locked');
+                    
+                    // Zorluk rozetleri
+                    let difficulty = 'easy';
+                    if (i > 10) difficulty = 'medium';
+                    if (i > 25) difficulty = 'hard';
+                    if (i > 40) difficulty = 'extreme';
+                    
+                    const badge = i <= this.unlockedLevels ? 
+                        `<span class="difficulty-badge ${difficulty}">${translations[this.language][difficulty]}</span>` : '';
+                    
+                    btn.innerHTML = `
+                        <span>${i}</span>
+                        <span class="star">${i <= this.unlockedLevels ? '★' : '🔒'}</span>
+                        ${badge}
+                    `;
+                    
+                    if (i <= this.unlockedLevels) {
+                        btn.onclick = () => this.startGame(i);
+                    }
+                    
+                    grid.appendChild(btn);
+                }
+            }
+            
+            renderShop() {
+                document.getElementById('shopCoins').textContent = this.coins;
+                const grid = document.getElementById('shopGrid');
+                grid.innerHTML = '';
+                
+                const items = [
+                    { id: 'default', name: this.language === 'tr' ? 'Neon Mavi' : 'Neon Blue', price: 0, color: '#00ffff' },
+                    { id: 'red', name: this.language === 'tr' ? 'Ateş Kırmızı' : 'Fire Red', price: 150, color: '#ff0066' },
+                    { id: 'green', name: this.language === 'tr' ? 'Zümrüt' : 'Emerald', price: 300, color: '#00ff88' },
+                    { id: 'purple', name: this.language === 'tr' ? 'Mor Işık' : 'Purple Light', price: 500, color: '#9900ff' },
+                    { id: 'gold', name: this.language === 'tr' ? 'Altın' : 'Gold', price: 1000, color: '#ffd700' }
+                ];
+                
+                items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'shop-item';
+                    if (this.currentSkin === item.id) {
+                        div.style.border = '3px solid #00ff88';
+                        div.innerHTML += `<div style="color: #00ff88; font-size: 0.9em; margin-top: 5px; font-weight: bold;">✓ ${this.language === 'tr' ? 'AKTİF' : 'ACTIVE'}</div>`;
+                    } else if (item.price > 0 && !this.hasSkin(item.id)) {
+                        div.classList.add('locked');
+                    }
+                    
+                    div.innerHTML = `
+                        <div style="width: 60px; height: 60px; background: ${item.color}; margin: 0 auto 15px; border-radius: 15px; box-shadow: 0 0 30px ${item.color};"></div>
+                        <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 5px;">${item.name}</div>
+                        <div style="color: #ffd700; font-weight: bold; font-size: 1.2em;">${item.price === 0 ? (this.language === 'tr' ? 'ÜCRETSİZ' : 'FREE') : item.price + ' 💰'}</div>
+                    `;
+                    
+                    div.onclick = () => this.buySkin(item);
+                    grid.appendChild(div);
+                });
+            }
+            
+            hasSkin(skinId) {
+                const skins = JSON.parse(localStorage.getItem('neonSkins') || '["default"]');
+                return skins.includes(skinId);
+            }
+            
+            buySkin(item) {
+                if (this.currentSkin === item.id) return;
+                
+                if (item.price === 0 || this.hasSkin(item.id)) {
+                    this.currentSkin = item.id;
+                    localStorage.setItem('neonSkin', item.id);
+                    this.audio.playWin();
+                    this.renderShop();
+                } else if (this.coins >= item.price) {
+                    this.coins -= item.price;
+                    localStorage.setItem('neonCoins', this.coins);
+                    
+                    const skins = JSON.parse(localStorage.getItem('neonSkins') || '["default"]');
+                    skins.push(item.id);
+                    localStorage.setItem('neonSkins', JSON.stringify(skins));
+                    
+                    this.currentSkin = item.id;
+                    localStorage.setItem('neonSkin', item.id);
+                    this.audio.playCoin();
+                    this.renderShop();
+                } else {
+                    this.audio.playCrash();
+                    alert(this.language === 'tr' ? 'Yeterli paran yok! Reklam izleyerek para kazanabilirsin.' : 'Not enough coins! Watch ads to earn more.');
+                }
+            }
+            
+            toggleMute() {
+                const isMuted = this.audio.toggleMute();
+                document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+            }
+            
+            setLanguage(lang) {
+                this.language = lang;
+                localStorage.setItem('neonLang', lang);
+                
+                document.getElementById('btnTr').classList.toggle('active', lang === 'tr');
+                document.getElementById('btnEn').classList.toggle('active', lang === 'en');
+                
+                // Tüm çevirileri uygula
+                document.querySelectorAll('[data-lang]').forEach(el => {
+                    const key = el.getAttribute('data-lang');
+                    if (translations[lang][key]) {
+                        el.textContent = translations[lang][key];
+                    }
+                });
+                
+                this.updateUI();
+            }
+            
+            updateUI() {
+                document.getElementById('coins').textContent = '💰 ' + this.coins;
+                document.getElementById('highScore').textContent = this.highScore + '%';
+            }
+        }
+        
+        const game = new NeonJump();
+    </script>
+</body>
+</html>
